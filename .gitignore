@@ -1,0 +1,27 @@
+*.pyc
+tags
+test
+models
+.idea
+
+# datasets
+facades/
+facades_test/
+facades_train/
+night2day/
+night2day_train/
+
+# other folders
+server/
+tools/
+docs/
+docker/
+
+# other format
+*.zip
+*.jpg
+*.png
+*.tar
+*.tar.gz
+*.tar.xz
+*.egg
