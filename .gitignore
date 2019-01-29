@@ -1,0 +1,15 @@
+# folders
+docs/
+docker/
+samples/
+.idea/
+frames/
+result/
+pyvenv/
+venv/
+
+# format
+*.bz2
+*.jpg
+*.png
+*.df
