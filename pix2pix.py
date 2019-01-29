@@ -14,11 +14,11 @@ import math
 import time
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--input_dir", help="path to folder containing images")
-parser.add_argument("--mode", required=True, choices=["train", "test", "export"])
-parser.add_argument("--output_dir", required=True, help="where to put output files")
+parser.add_argument("--input_dir", default="input/", help="path to folder containing images")
+parser.add_argument("--mode", default="test", choices=["train", "test", "export"])
+parser.add_argument("--output_dir", default="results/pix2pix/night2day", help="where to put output files")
 parser.add_argument("--seed", type=int)
-parser.add_argument("--checkpoint", default=None, help="directory with checkpoint to resume training from or use for testing")
+parser.add_argument("--checkpoint", default="night2day_train", help="directory with checkpoint to resume training from or use for testing")
 
 parser.add_argument("--max_steps", type=int, help="number of training steps (0 to disable)")
 parser.add_argument("--max_epochs", type=int, help="number of training epochs")
