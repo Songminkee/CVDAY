@@ -1,6 +1,7 @@
-####line177,350####
+####line178,351####
 
 import sys
+import os
 import time
 from tkinter import messagebox
 from tkinter.filedialog import askopenfilename
@@ -361,6 +362,9 @@ class MainWindow(QDialog):
         global imgStyle
         global dstPath
         global srcPath
+        sp=os.path.split(srcPath)
+        #sp[0] directory
+        #sp[1] filename
         if imgStyle == "A":
             dstPath='./dst/A/img.jpg'
             img=QPixmap(srcPath)
