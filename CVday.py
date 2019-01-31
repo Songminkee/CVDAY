@@ -1,4 +1,4 @@
-####line178,351####
+####line175,348####
 
 import sys
 import os
@@ -14,14 +14,17 @@ from PyQt5.QtGui import QStandardItem, QStandardItemModel, QPixmap, QColor
 from PyQt5.QtWidgets import *
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QMessageBox, QWidget, QHBoxLayout, QVBoxLayout, QGridLayout, QLabel, QListView, QLineEdit, QComboBox, QProgressBar, QSlider, QPushButton)
 from PIL import Image
+import cv2
 
-winLabel=''
 srcPath='./src/img.jpg'
 dstPath=''
 crtPath=''
 imgLabel=''
 imgEdit=''
+winLabel=''
 imgStyle='A'
+imgEffect='└hue'
+imgValue=9
 imgFormat='jpg'
 
 class MainWindow(QDialog):
@@ -168,12 +171,6 @@ class MainWindow(QDialog):
                            "font: bold;"
                            "font-size: 10px;"
                            "font-family: Arial;}")
-
-        self.pbar = QProgressBar(self)#others
-        self.pbar.setGeometry(15, 681, 100, 30)
-
-        sld = QSlider(Qt.Horizontal, self)#others
-        sld.setGeometry(115, 681, 100, 30)
 
         ####here####
         '''
@@ -465,11 +462,84 @@ class EffectWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Effect")
-        self.setGeometry(1450, 135, 390, 810)
+        self.setGeometry(1700, 135, 185, 455)
         self.init_window()
 
     def init_window(self):
-        self.show()#others
+        list = QListWidget(self)
+        label = ('--Image Processing--',
+               '└hue',
+               '└filter',
+               '　└warm',
+               '　└cool',
+               '　└sepia',
+               '　└vintage',
+               '└brightness',
+               '└contrast',
+               '└saturation',
+               '└sharp',
+               '└blur',
+               '　',
+               '--Photo Decoration--',
+               '└frame',
+               '└canvas')
+        list.addItems(label)
+        list.setGeometry(20, 20, 145, 365)
+        list.itemClicked.connect(self.on_effectMode)
+        sld = QSlider(Qt.Horizontal, self)
+        sld.setRange(0,100)
+        sld.setValue(9)
+        sld.setGeometry(20, 405, 145, 30)
+        sld.valueChanged.connect(self.on_effectValue)
+        self.show()
+
+    def on_effectMode(self, item):
+        global imgEffect
+        if item.text() == "└hue":
+            imgEffect = "hue"
+        elif item.text() == "　└warm":
+            imgEffect = "warm"
+        elif item.text() == "　└cool":
+            imgEffect = "cool"
+        elif item.text() == "　└sepia":
+            imgEffect = "sepia"
+        elif item.text() == "　└vintage":
+            imgEffect = "vintage"
+        elif item.text() == "└brightness":
+            imgEffect = "brightness"
+        elif item.text() == "└contrast":
+            imgEffect = "contrast"
+        elif item.text() == "└saturation":
+            imgEffect = "saturation"
+        elif item.text() == "└sharp":
+            imgEffect = "sharp"
+        elif item.text() == "└blur":
+            imgEffect = "blur"
+        elif item.text() == "└frame":
+            imgEffect = "frame"
+        elif item.text() == "└canvas":
+            imgEffect = "canvas"
+        else:
+            imgEffect=''
+        print(imgEffect)
+
+    def on_effectValue(self,value):
+        global dstPath
+        img=cv2.imread(dstPath,cv2.IMREAD_COLOR)
+        global imgValue
+        imgValue = value
+        global imgEffect
+        if imgEffect=="blur":
+            img2 = cv2.blur(img, (imgValue, imgValue), anchor=(-1, -1), borderType=cv2.BORDER_DEFAULT)
+        cv2.imshow("img2", img2)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+        #pixmap = QPixmap(img2)
+        #smaller_pixmap = pixmap.scaled(1050, 636, Qt.KeepAspectRatio, Qt.FastTransformation)
+        #global imgLabel
+        #imgLabel.setPixmap(smaller_pixmap)
+        #imgLabel.setGeometry(20, 45, 1050, 636)
+        #imgLabel.show()
 
 class StartWindow(QMainWindow):
 
