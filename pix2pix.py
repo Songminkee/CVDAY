@@ -12,6 +12,7 @@ import random
 import collections
 import math
 import time
+import cv2
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--input_dir", default="input/", help="path to folder containing images")
@@ -234,12 +235,23 @@ def load_examples():
     if a.input_dir is None or not os.path.exists(a.input_dir):
         raise Exception("input_dir does not exist")
 
-    input_paths = glob.glob(os.path.join(a.input_dir, "*.jpg"))
-    decode = tf.image.decode_jpeg
-    if len(input_paths) == 0:
-        input_paths = glob.glob(os.path.join(a.input_dir, "*.png"))
-        decode = tf.image.decode_png
+    input_img = cv2.imread(os.path.join(a.input_dir, "lowlight.png"))
+    input_img = cv2.resize(input_img, dsize=(256, 256))
+    black_img = np.zeros((256, 256, 3), np.uint8)
 
+    concat_img = cv2.hconcat([input_img, black_img])
+
+    cv2.imwrite(os.path.join(a.input_dir, "lowlight.png"), concat_img)  # 옆에 검은색 붙이고 덮어서 저장하기
+
+    input_paths = list()
+    input_paths.append(os.path.join(a.input_dir, "lowlight.png"))  # 추후 파일명 변경
+
+    if os.path.splitext("lowlight.png")[1] == ".jpg":
+        decode = tf.image.decode_jpeg
+
+    elif os.path.splitext("lowlight.png")[1] == ".png":
+        decode = tf.image.decode_png
+    
     if len(input_paths) == 0:
         raise Exception("input_dir contains no image files")
 
@@ -487,7 +499,7 @@ def create_model(inputs, targets):
 
 
 def save_images(fetches, step=None):
-    image_dir = os.path.join(a.output_dir, "images")
+    image_dir = os.path.join(a.output_dir)
     if not os.path.exists(image_dir):
         os.makedirs(image_dir)
 
@@ -736,68 +748,5 @@ def main():
                 index_path = append_index(filesets)
             print("wrote index at", index_path)
             print("rate", (time.time() - start) / max_steps)
-        else:
-            # training
-            start = time.time()
-
-            for step in range(max_steps):
-                def should(freq):
-                    return freq > 0 and ((step + 1) % freq == 0 or step == max_steps - 1)
-
-                options = None
-                run_metadata = None
-                if should(a.trace_freq):
-                    options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
-                    run_metadata = tf.RunMetadata()
-
-                fetches = {
-                    "train": model.train,
-                    "global_step": sv.global_step,
-                }
-
-                if should(a.progress_freq):
-                    fetches["discrim_loss"] = model.discrim_loss
-                    fetches["gen_loss_GAN"] = model.gen_loss_GAN
-                    fetches["gen_loss_L1"] = model.gen_loss_L1
-
-                if should(a.summary_freq):
-                    fetches["summary"] = sv.summary_op
-
-                if should(a.display_freq):
-                    fetches["display"] = display_fetches
-
-                results = sess.run(fetches, options=options, run_metadata=run_metadata)
-
-                if should(a.summary_freq):
-                    print("recording summary")
-                    sv.summary_writer.add_summary(results["summary"], results["global_step"])
-
-                if should(a.display_freq):
-                    print("saving display images")
-                    filesets = save_images(results["display"], step=results["global_step"])
-                    append_index(filesets, step=True)
-
-                if should(a.trace_freq):
-                    print("recording trace")
-                    sv.summary_writer.add_run_metadata(run_metadata, "step_%d" % results["global_step"])
-
-                if should(a.progress_freq):
-                    # global_step will have the correct step count if we resume from a checkpoint
-                    train_epoch = math.ceil(results["global_step"] / examples.steps_per_epoch)
-                    train_step = (results["global_step"] - 1) % examples.steps_per_epoch + 1
-                    rate = (step + 1) * a.batch_size / (time.time() - start)
-                    remaining = (max_steps - step) * a.batch_size / rate
-                    print("progress  epoch %d  step %d  image/sec %0.1f  remaining %dm" % (train_epoch, train_step, rate, remaining / 60))
-                    print("discrim_loss", results["discrim_loss"])
-                    print("gen_loss_GAN", results["gen_loss_GAN"])
-                    print("gen_loss_L1", results["gen_loss_L1"])
-
-                if should(a.save_freq):
-                    print("saving model")
-                    saver.save(sess, os.path.join(a.output_dir, "model"), global_step=sv.global_step)
-
-                if sv.should_stop():
-                    break
-
 
 main()

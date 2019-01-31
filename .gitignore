@@ -10,6 +10,10 @@ facades_test/
 facades_train/
 night2day/
 night2day_train/
+facial_test/
+facial_train/
+dst/
+src/
 
 # other folders
 server/
