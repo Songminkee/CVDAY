@@ -12,7 +12,7 @@ from PyQt5 import QtGui, QtWidgets
 from PyQt5.QtGui import *
 from PyQt5.QtGui import QStandardItem, QStandardItemModel, QPixmap, QColor
 from PyQt5.QtWidgets import *
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QMessageBox, QWidget, QHBoxLayout, QVBoxLayout, QGridLayout, QLabel, QListView, QLineEdit, QComboBox, QProgressBar, QSlider, QPushButton)
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QMessageBox, QWidget, QHBoxLayout, QVBoxLayout, QGridLayout, QLabel, QListView, QLineEdit, QComboBox, QProgressBar, QSlider, QLCDNumber, QPushButton)
 from PIL import Image
 import cv2
 
@@ -22,10 +22,12 @@ crtPath=''
 imgLabel=''
 imgEdit=''
 winLabel=''
+winLcd=''
 imgStyle='A'
 imgEffect='└hue'
-imgValue=9
+imgValue=50
 imgFormat='jpg'
+img=''
 
 class MainWindow(QDialog):
 
@@ -462,7 +464,11 @@ class EffectWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Effect")
-        self.setGeometry(1700, 135, 185, 455)
+        self.setGeometry(1218, 338, 171, 404)
+        cv2.namedWindow('img', cv2.WINDOW_NORMAL)
+        cv2.setWindowProperty('img', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+        cv2.moveWindow('img', 531, 307)
+        cv2.resizeWindow('img', 667, 435)
         self.init_window()
 
     def init_window(self):
@@ -484,16 +490,24 @@ class EffectWindow(QMainWindow):
                '└frame',
                '└canvas')
         list.addItems(label)
-        list.setGeometry(20, 20, 145, 365)
-        list.itemClicked.connect(self.on_effectMode)
+        list.setGeometry(20, 20, 131, 284)
+        list.itemClicked.connect(self.on_effectList)
+        global winLcd
+        winLcd=QLCDNumber(self)
+        winLcd.display(50)
+        winLcd.setGeometry(-14, 303, 60, 60)
+        winLcd.setStyleSheet("""QLCDNumber{background-color:rgba(0,0,0,0);}""")
         sld = QSlider(Qt.Horizontal, self)
-        sld.setRange(0,100)
-        sld.setValue(9)
-        sld.setGeometry(20, 405, 145, 30)
-        sld.valueChanged.connect(self.on_effectValue)
+        sld.setRange(1,100)
+        sld.setValue(50)
+        sld.setGeometry(56, 324, 95, 20)
+        sld.valueChanged.connect(self.on_effectSld)
+        btn = QPushButton("apply", self)
+        btn.setGeometry(20, 354, 131, 30)
+        btn.clicked.connect(self.on_effectBtn)
         self.show()
 
-    def on_effectMode(self, item):
+    def on_effectList(self, item):
         global imgEffect
         if item.text() == "└hue":
             imgEffect = "hue"
@@ -521,25 +535,30 @@ class EffectWindow(QMainWindow):
             imgEffect = "canvas"
         else:
             imgEffect=''
-        print(imgEffect)
 
-    def on_effectValue(self,value):
-        global dstPath
-        img=cv2.imread(dstPath,cv2.IMREAD_COLOR)
+    def on_effectSld(self,value):
         global imgValue
         imgValue = value
+        global winLcd
+        winLcd.display(imgValue)
+        global dstPath
+        global img
+        img = cv2.imread(dstPath, cv2.IMREAD_COLOR)
         global imgEffect
         if imgEffect=="blur":
-            img2 = cv2.blur(img, (imgValue, imgValue), anchor=(-1, -1), borderType=cv2.BORDER_DEFAULT)
-        cv2.imshow("img2", img2)
+            img = cv2.blur(img, (imgValue, imgValue), anchor=(-1, -1), borderType=cv2.BORDER_DEFAULT)
+        cv2.imshow('img', img)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
-        #pixmap = QPixmap(img2)
-        #smaller_pixmap = pixmap.scaled(1050, 636, Qt.KeepAspectRatio, Qt.FastTransformation)
-        #global imgLabel
-        #imgLabel.setPixmap(smaller_pixmap)
-        #imgLabel.setGeometry(20, 45, 1050, 636)
-        #imgLabel.show()
+
+    def on_effectBtn(self):
+        global dstPath
+        global img
+        cv2.imwrite(dstPath,img)
+        global imgLabel
+        pixmap = QPixmap(dstPath)
+        smaller_pixmap = pixmap.scaled(1050, 636, Qt.KeepAspectRatio, Qt.FastTransformation)
+        imgLabel.setPixmap(smaller_pixmap)
 
 class StartWindow(QMainWindow):
 
