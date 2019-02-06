@@ -1,6 +1,9 @@
+<<<<<<< HEAD
 # folders
+=======
+>>>>>>> Song
 .idea/
-__pychach__/
+__pycache__/
 dst/
 src/
 model/
