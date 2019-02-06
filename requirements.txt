@@ -1,6 +1,5 @@
-python==3.6.8
 pyqt5==5.11.3
-opencv==3.4.4
+opencv-python==3.4.4.19
 numpy>=1.16
 tensorflow-gpu==1.12
 scipy>=1.2
