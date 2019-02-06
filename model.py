@@ -109,12 +109,10 @@ class cyclegan(object):
         t_vars = tf.trainable_variables()
         self.d_vars = [var for var in t_vars if 'discriminator' in var.name]
         self.g_vars = [var for var in t_vars if 'generator' in var.name]
-        for var in t_vars: print(var.name)
+
 
 
     def load(self, checkpoint_dir):
-
-        print(" [*] Reading checkpoint...")
 
         model_dir = "%s_%s" % (self.dataset_dir, self.image_size)
         checkpoint_dir = os.path.join(checkpoint_dir, model_dir)
@@ -151,3 +149,5 @@ class cyclegan(object):
         save_images(fake_img, [1, 1], image_path,folder)
 
         return image_path
+
+
