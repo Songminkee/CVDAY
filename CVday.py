@@ -180,7 +180,7 @@ class MainWindow(QDialog):
         ####here####
         ## 콤보박스에 넣을 이름, addItem에 넣으면 됨 모델명으로 하는 거 추천
         ## 초기값이 안들어가 있어서 vangogh로 되어있어도 맨처음에 하나 클릭 해야됨
-         
+
         combo2 = QComboBox(self)
         combo2.addItem("vangogh")
         combo2.addItem("ukiyoe")
