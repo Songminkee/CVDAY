@@ -1,9 +1,7 @@
-<<<<<<< HEAD
 # folders
-=======
->>>>>>> Song
 .idea/
 __pycache__/
 dst/
 src/
-model/
+ukiyoe2photo_256/
+vangogh2photo_256/

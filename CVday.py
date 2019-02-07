@@ -15,6 +15,9 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QMessageBox, QWidget, QHBoxLayout, QVBoxLayout, QGridLayout, QLabel, QListView, QLineEdit, QComboBox, QProgressBar, QSlider, QLCDNumber, QPushButton)
 from PIL import Image
 import cv2
+import tensorflow as tf
+tf.set_random_seed(19)
+from cyclegan.model import cyclegan
 
 srcPath='./src/img.jpg'
 dstPath=''
@@ -175,17 +178,19 @@ class MainWindow(QDialog):
                            "font-family: Arial;}")
 
         ####here####
-        '''
+        ## 콤보박스에 넣을 이름, addItem에 넣으면 됨 모델명으로 하는 거 추천
+        ## 초기값이 안들어가 있어서 vangogh로 되어있어도 맨처음에 하나 클릭 해야됨
+         
         combo2 = QComboBox(self)
-        combo2.addItem("A")
-        combo2.addItem("B")
+        combo2.addItem("vangogh")
+        combo2.addItem("ukiyoe")
         combo2.addItem("C")
         combo2.setGeometry(225, 681, 100, 22)
         combo2.activated[str].connect(self.on_format2)
         btn7 = QPushButton("적용", self)
         btn7.setGeometry(325, 681, 35, 20)
         btn7.clicked.connect(self.on_save2)
-        '''
+
 
         btn1 = QPushButton("●", self)
         btn1.setGeometry(1035, 692,35,20)
@@ -347,16 +352,17 @@ class MainWindow(QDialog):
         elif item == "GIF":
             imgFormat = "gif"
 
-    ####here####
-    '''
+    ###here
+    ### 내경우는 item이랑 imgstyle이랑 통일함
     def on_format2(self, item):
         global imgStyle
-        if item == "A":
-            imgStyle = "A"
-        elif item == "B":
-            imgStyle = "B"
+        if item == "vangogh":
+            imgStyle = "vangogh"
+        elif item == "ukiyoe":
+            imgStyle = "ukiyoe"
         elif item == "C":
             imgStyle = "C"
+
     def on_save2(self):
         global imgStyle
         global dstPath
@@ -364,19 +370,47 @@ class MainWindow(QDialog):
         sp=os.path.split(srcPath)
         #sp[0] directory
         #sp[1] filename
-        if imgStyle == "A":
-            dstPath='./dst/A/img.jpg'
-            img=QPixmap(srcPath)
-            img.save(dstPath)
-        if imgStyle == "B":
-            dstPath='./dst/B/img.jpg'
-            img=QPixmap(srcPath)
-            img.save(dstPath)
+        if imgStyle == "vangogh":
+            modelname='vangogh2photo'
+            tfconfig=tf.ConfigProto(allow_soft_placement=True)
+            tfconfig.gpu_options.allow_growth=True
+            with tf.Session(config=tfconfig) as sess:
+                model=cyclegan(sess,modelname,srcPath)
+                dstPath=model.test()
+            tf.contrib.keras.backend.clear_session()
+            pixmap = QPixmap(dstPath)
+            imgLabel.setPixmap(pixmap)
+            imgLabel.setGeometry(20, 45, 1050, 636)
+
+        if imgStyle == "ukiyoe":
+            modelname='ukiyoe2photo'
+            tfconfig=tf.ConfigProto(allow_soft_placement=True)
+            tfconfig.gpu_options.allow_growth=True
+            with tf.Session(config=tfconfig) as sess:
+                model=cyclegan(sess,modelname,srcPath)
+                dstPath=model.test()
+            ### tensorflow 쓰는 경우 아래처럼 session초기화 해줘야 에러 안남
+            tf.contrib.keras.backend.clear_session()
+            ### 밑에 주석 참고
+            pixmap = QPixmap(dstPath)
+            imgLabel.setPixmap(pixmap)
+            imgLabel.setGeometry(20, 45, 1050, 636)
+
+        '''
+        나는 애초에 모델에서 저장을 해줌,
+        img=QPixmap(srcPath)
+        img.save(dstPath)
+        그대로 두면 원본이 덮어 씌워서
+        pixmap = QPixmap(dstPath)
+        imgLabel.setPixmap(pixmap)
+        imgLabel.setGeometry(20, 45, 1050, 636)
+        로 바꿨음
+        '''
         if imgStyle == "C":
             dstPath='./dst/C/img.jpg'
             img=QPixmap(srcPath)
             img.save(dstPath)
-    '''
+    ###
 
     def on_save(self):
         global dstPath

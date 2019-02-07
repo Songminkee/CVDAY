@@ -6,8 +6,8 @@ import tensorflow as tf
 import numpy as np
 from collections import namedtuple
 
-from module import *
-from utils import *
+from .module import *
+from .utils import *
 
 
 class cyclegan(object):

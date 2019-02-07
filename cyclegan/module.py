@@ -1,6 +1,6 @@
 from __future__ import division
 import tensorflow as tf
-from ops import *
+from .ops import *
 
 def discriminator(image, options, reuse=False, name="discriminator"):
 
