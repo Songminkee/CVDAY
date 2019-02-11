@@ -18,6 +18,7 @@ import cv2
 import tensorflow as tf
 tf.set_random_seed(19)
 from cyclegan.model import cyclegan
+import pix2pix as ptp
 
 srcPath='./src/img.jpg'
 dstPath=''
@@ -184,6 +185,7 @@ class MainWindow(QDialog):
         combo2 = QComboBox(self)
         combo2.addItem("vangogh")
         combo2.addItem("ukiyoe")
+        combo2.addItem("night2day")
         combo2.addItem("C")
         combo2.setGeometry(225, 681, 100, 22)
         combo2.activated[str].connect(self.on_format2)
@@ -360,8 +362,10 @@ class MainWindow(QDialog):
             imgStyle = "vangogh"
         elif item == "ukiyoe":
             imgStyle = "ukiyoe"
-        elif item == "C":
-            imgStyle = "C"
+        elif item == "night2day":
+            imgStyle = "night2day"
+        elif item == "else":  #  새로운 기능 여기에 추가
+            imgStyle = "else"
 
     def on_save2(self):
         global imgStyle
@@ -406,10 +410,22 @@ class MainWindow(QDialog):
         imgLabel.setGeometry(20, 45, 1050, 636)
         로 바꿨음
         '''
+
+        # by 소연 : 인자는 input 경로, output 경로, checkpoint 경로만 받음
+        # 사진 띄우는거는 민기오빠 따라함^^
+        if imgStyle == "night2day":
+            pix_class = ptp.pix2pixClass()
+            dstPath = os.path.join('dst', 'night2day', os.path.basename(srcPath))  # os.path.join('./dst/night2day/', sp[1])
+            pix_class.main(input_dir=srcPath, output_dir='dst/night2day', checkpoint='model/night2day_train')
+            pixmap = QPixmap(dstPath)
+            imgLabel.setPixmap(pixmap)
+            imgLabel.setGeometry(20, 45, 1050, 636)
+
         if imgStyle == "C":
             dstPath='./dst/C/img.jpg'
             img=QPixmap(srcPath)
             img.save(dstPath)
+
     ###
 
     def on_save(self):

@@ -15,6 +15,7 @@ facial_test/
 facial_train/
 dst/
 src/
+model/
 
 # other folders
 server/
