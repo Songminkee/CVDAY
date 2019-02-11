@@ -391,6 +391,7 @@ class MainWindow(QDialog):
                 dstPath=model.test()
             ### tensorflow 쓰는 경우 아래처럼 session초기화 해줘야 에러 안남
             tf.contrib.keras.backend.clear_session()
+            print(dstPath)
             ### 밑에 주석 참고
             pixmap = QPixmap(dstPath)
             imgLabel.setPixmap(pixmap)
