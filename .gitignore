@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 *.pyc
 tags
 test
@@ -31,7 +31,8 @@ docker/
 *.tar.gz
 *.tar.xz
 *.egg
-=======
+*.log
+
 # folders
 .idea/
 __pycache__/
@@ -39,4 +40,4 @@ dst/
 src/
 ukiyoe2photo_256/
 vangogh2photo_256/
->>>>>>> 34719ca3ed0a95d3bbbd555b445d7e5b2663ccde
+
