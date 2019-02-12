@@ -13,13 +13,12 @@ night2day/
 night2day_train/
 facial_test/
 facial_train/
-dst/
-src/
-model/
+night2day_train/
+ukiyoe2photo_256/
+vangogh2photo_256/
 
 # other folders
 server/
-tools/
 docs/
 docker/
 
@@ -36,8 +35,4 @@ docker/
 # folders
 .idea/
 __pycache__/
-dst/
-src/
-ukiyoe2photo_256/
-vangogh2photo_256/
 
