@@ -4,9 +4,12 @@ docker/
 samples/
 .idea/
 frames/
-result/
 pyvenv/
 venv/
+src/
+dst/
+facial_train/
+__pycache__/
 
 # format
 *.bz2

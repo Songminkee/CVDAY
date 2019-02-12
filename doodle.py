@@ -16,6 +16,10 @@ import time
 import pickle
 import argparse
 import itertools
+import cv2
+import face_labeling
+
+
 import collections
 
 
@@ -23,26 +27,33 @@ import collections
 parser = argparse.ArgumentParser(description='Generate a new image by applying style onto a content image.',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 add_arg = parser.add_argument
-
-add_arg('--content',        default=None, type=str,         help='Content image path as optimization target.')
+face_labeling.pix_class.main(input_dir='src/sample.jpg', output_dir='src', checkpoint='facial_train')
+face_labeling.pix_class.main(input_dir='src/style.jpg', output_dir='src', checkpoint='facial_train')
+input_img = cv2.imread("src/sample.jpg")
+input_img=cv2.resize(input_img, dsize=(256, 256))
+cv2.imwrite('src/sample.jpg',input_img)
+style_img = cv2.imread("src/style.jpg")
+style_img=cv2.resize(style_img, dsize=(256, 256))
+cv2.imwrite('src/style.jpg',style_img)
+add_arg('--content',        default='src/sample.jpg', type=str,        help='Content image path as optimization target.')
 add_arg('--content-weight', default=10.0, type=float,       help='Weight of content relative to style.')
 add_arg('--content-layers', default='4_2', type=str,        help='The layer with which to match content.')
-add_arg('--style',          default=None, type=str,         help='Style image path to extract patches.')
-add_arg('--style-weight',   default=25.0, type=float,       help='Weight of style relative to content.')
+add_arg('--style',          default='src/style.jpg', type=str,         help='Style image path to extract patches.')
+add_arg('--style-weight',   default=10.0, type=float,       help='Weight of style relative to content.')
 add_arg('--style-layers',   default='3_1,4_1', type=str,    help='The layers to match style patches.')
 add_arg('--semantic-ext',   default='_sem.png', type=str,   help='File extension for the semantic maps.')
 add_arg('--semantic-weight', default=10.0, type=float,      help='Global weight of semantics vs. features.')
-add_arg('--output',         default='output.png', type=str, help='Output image path to save once done.')
+add_arg('--output',         default='dst/result.png', type=str, help='Output image path to save once done.')
 add_arg('--output-size',    default=None, type=str,         help='Size of the output image, e.g. 512x512.')
-add_arg('--phases',         default=3, type=int,            help='Number of image scales to process in phases.')
+add_arg('--phases',         default=4, type=int,            help='Number of image scales to process in phases.')
 add_arg('--slices',         default=2, type=int,            help='Split patches up into this number of batches.')
 add_arg('--cache',          default=0, type=int,            help='Whether to compute matches only once.')
 add_arg('--smoothness',     default=1E+0, type=float,       help='Weight of image smoothing scheme.')
 add_arg('--variety',        default=0.0, type=float,        help='Bias toward selecting diverse patches, e.g. 0.5.')
 add_arg('--seed',           default='noise', type=str,      help='Seed image path, "noise" or "content".')
 add_arg('--seed-range',     default='16:240', type=str,     help='Random colors chosen in range, e.g. 0:255.')
-add_arg('--iterations',     default=100, type=int,          help='Number of iterations to run each resolution.')
-add_arg('--device',         default='cpu', type=str,        help='Index of the GPU number to use, for theano.')
+add_arg('--iterations',     default=1000, type=int,          help='Number of iterations to run each resolution.')
+add_arg('--device',         default='cuda', type=str,        help='Index of the GPU number to use, for theano.')
 add_arg('--print-every',    default=10, type=int,           help='How often to log statistics to stdout.')
 add_arg('--save-every',     default=10, type=int,           help='How frequently to save PNG into `frames`.')
 args = parser.parse_args()
