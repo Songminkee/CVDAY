@@ -490,7 +490,7 @@ class pix2pixClass:
             #     with open(out_path, "wb") as f:
             #         f.write(contents)
 
-            filename = name.split('-')[0] + '.jpg'  # + "-" + "outputs.png"
+            filename = name.split('-')[0] + '.png'
             fileset["outputs"] = filename
             out_path = os.path.join(image_dir, filename)
             contents = fetches["outputs"][i]
@@ -498,7 +498,8 @@ class pix2pixClass:
                 f.write(contents)
 
             filesets.append(fileset)
-        return filesets
+
+        return out_path
 
 
     def main(self, input_dir, output_dir, checkpoint):
@@ -630,11 +631,15 @@ class pix2pixClass:
                 max_steps = min(examples.steps_per_epoch, max_steps)
                 for step in range(max_steps):
                     results = sess.run(display_fetches)
-                    filesets = self.save_images(results)
+                    out_path = self.save_images(results)
                     # for i, f in enumerate(filesets):
                     #    print("evaluated image", f["name"])
 
                 os.remove(self.concat_dir)
+
+        tf.contrib.keras.backend.clear_session()
+
+        return out_path
 
 # pix_class = pix2pixClass()
 # pix_class.main(input_dir='src/joonggi.jpg', output_dir='dst', checkpoint='facial_train')
