@@ -45,7 +45,16 @@ class MainWindow(QDialog):
         self.init_UI()
         self.setGeometry(240, 135, 1440, 810)
         self.setWindowFlags(Qt.FramelessWindowHint)
+        self.oldPos = self.pos()
         self.show()
+
+    def mousePressEvent(self, event):
+        self.oldPos = event.globalPos()
+
+    def mouseMoveEvent(self, event):
+        delta = QPoint (event.globalPos() - self.oldPos)
+        self.move(self.x() + delta.x(), self.y() + delta.y())
+        self.oldPos = event.globalPos()
 
     def init_UI(self):
         self.w1 = QWidget(parent=self, flags=Qt.Widget)
@@ -129,11 +138,12 @@ class MainWindow(QDialog):
                             "font-size: 12px;"
                             "font-family: Arial;}")
 
+        label=QLabel(self)
         global imgLabel
         imgLabel = QLabel(self)
         pixmap = QPixmap("main.png")#interface
-        imgLabel.setPixmap(pixmap)
-        imgLabel.setGeometry(20, 45, 1050, 636)
+        label.setPixmap(pixmap)
+        label.setGeometry(20, 45, 1050, 636)
 
         self.myQListWidget = QtWidgets.QListWidget(self)#others
         for index, name, icon in [
@@ -544,11 +554,13 @@ class EffectWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("Effect")
         self.setGeometry(1218, 338, 171, 404)
-        cv2.namedWindow('img', cv2.WINDOW_NORMAL)
-        cv2.setWindowProperty('img', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+        cv2.namedWindow('img', flags=cv2.WINDOW_GUI_NORMAL)
         cv2.moveWindow('img', 531, 307)
-        cv2.resizeWindow('img', 667, 435)
+        cv2.resizeWindow('img', 667, 404)
         self.init_window()
+
+    def closeEvent(self, *args, **kwargs):
+        cv2.destroyAllWindows()
 
     def init_window(self):
         list = QListWidget(self)
@@ -658,7 +670,7 @@ class StartWindow(QMainWindow):
         self.show()
         self.counter = 0
         self.timer = QTimer()
-        self.timer.setInterval(1000)
+        self.timer.setInterval(100)
         self.timer.timeout.connect(self.on_time)
         self.timer.start()
 
@@ -675,7 +687,7 @@ class StartWindow(QMainWindow):
         if self.counter == 5:
             winLabel.setText("Completed..")
         if self.counter ==6:
-            time.sleep(3)
+            time.sleep(1)
             self.close()
             window = MainWindow()
             window.exec_()
