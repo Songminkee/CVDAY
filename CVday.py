@@ -1,4 +1,6 @@
-####line175,348####
+####################################
+####search(Ctrl+F1) here1, here2####
+####################################
 
 import sys
 import os
@@ -21,13 +23,14 @@ from tools.cyclegan.model import cyclegan
 from tools.pix2pix import pix2pix as ptp
 
 srcPath='./src/img.jpg'
+stlPath='./src/stlimg.jpg'
 dstPath=''
 crtPath=''
 imgLabel=''
 imgEdit=''
 winLabel=''
 winLcd=''
-imgStyle='A'
+imgStyle='vangogh'
 imgEffect='└hue'
 imgValue=50
 imgFormat='jpg'
@@ -128,7 +131,7 @@ class MainWindow(QDialog):
 
         global imgLabel
         imgLabel = QLabel(self)
-        pixmap = QPixmap("main.png") # interface
+        pixmap = QPixmap("main.png")#interface
         imgLabel.setPixmap(pixmap)
         imgLabel.setGeometry(20, 45, 1050, 636)
 
@@ -180,7 +183,8 @@ class MainWindow(QDialog):
                            "font-size: 10px;"
                            "font-family: Arial;}")
 
-        ####here####
+        ###################
+        ####here1 start####
         ## 콤보박스에 넣을 이름, addItem에 넣으면 됨 모델명으로 하는 거 추천
         ## 초기값이 안들어가 있어서 vangogh로 되어있어도 맨처음에 하나 클릭 해야됨
 
@@ -188,13 +192,15 @@ class MainWindow(QDialog):
         combo2.addItem("vangogh")
         combo2.addItem("ukiyoe")
         combo2.addItem("night2day")
-        combo2.addItem("C")
+        combo2.addItem("neuraldoodle")
         combo2.setGeometry(225, 681, 100, 22)
         combo2.activated[str].connect(self.on_format2)
         btn7 = QPushButton("적용", self)
         btn7.setGeometry(325, 681, 35, 20)
         btn7.clicked.connect(self.on_save2)
 
+        ####here1 end####
+        #################
 
         btn1 = QPushButton("●", self)
         btn1.setGeometry(1035, 692,35,20)
@@ -311,7 +317,7 @@ class MainWindow(QDialog):
         global dstPath
         global crtPath
         crtPath=dstPath
-        pixmap = QPixmap(dstPath)#others
+        pixmap = QPixmap(dstPath)
         smaller_pixmap = pixmap.scaled(1050, 636, Qt.KeepAspectRatio, Qt.FastTransformation)
         global imgLabel
         imgLabel.setPixmap(smaller_pixmap)
@@ -324,8 +330,8 @@ class MainWindow(QDialog):
     def on_open(self):
         try:
             root = Tk()
-            root.filename = filedialog.askopenfilename(initialdir="C:/", title="Open", filetypes=(("jpeg files", "*.jpg"), ("all files", "*.*")))
             root.withdraw()
+            root.filename = filedialog.askopenfilename(initialdir="C:/", title="Open", filetypes=(("jpeg files", "*.jpg"), ("all files", "*.*")))
             global srcPath
             pixmap = QPixmap(root.filename)
             img=pixmap
@@ -356,26 +362,45 @@ class MainWindow(QDialog):
         elif item == "GIF":
             imgFormat = "gif"
 
-    ###here
-    ### 내경우는 item이랑 imgstyle이랑 통일함
+    ###################
+    ####here2 start####
+    ## 내경우는 item이랑 imgstyle이랑 통일함
+
     def on_format2(self, item):
         global imgStyle
+        global stlPath
         if item == "vangogh":
             imgStyle = "vangogh"
         elif item == "ukiyoe":
             imgStyle = "ukiyoe"
         elif item == "night2day":
             imgStyle = "night2day"
-        elif item == "else":  #  새로운 기능 여기에 추가
-            imgStyle = "else"
+        elif item == "neuraldoodle":
+            imgStyle = "neuraldoodle" # 명석오빠꺼
+            message = QMessageBox.question(self, 'Notice', "You must choose a style image.", QMessageBox.Yes | QMessageBox.No,QMessageBox.No)
+            if message == QMessageBox.Yes:
+                try:
+                    ## style_img 선택 (input_img는 맨 처음 open 버튼으로 선택되어있는 상태)
+                    root = Tk()
+                    root.withdraw()
+                    root.filename = filedialog.askopenfilename(initialdir="C:/", title="Open",filetypes=(("jpeg files", "*.jpg"), ("all files", "*.*")))
+                    ## style_img는 src 폴더에 stlimg 파일로 저장됨 (input_img는 src 폴더에 img 파일로 저장되어있는 상태)
+                    pixmap = QPixmap(root.filename)
+                    img = pixmap
+                    img.save(stlPath)
+                except:
+                    pass
+            else:
+                pass
 
     def on_save2(self):
         global imgStyle
         global dstPath
         global srcPath
+        global stlPath
         sp=os.path.split(srcPath)
-        #sp[0] directory
-        #sp[1] filename
+        # sp[0] directory
+        # sp[1] filename
         if imgStyle == "vangogh":
             modelname='vangogh2photo'
             tfconfig=tf.ConfigProto(allow_soft_placement=True)
@@ -395,9 +420,9 @@ class MainWindow(QDialog):
             with tf.Session(config=tfconfig) as sess:
                 model=cyclegan(sess,modelname,srcPath)
                 dstPath=model.test()
-            ### tensorflow 쓰는 경우 아래처럼 session초기화 해줘야 에러 안남
+            ## tensorflow 쓰는 경우 아래처럼 session초기화 해줘야 에러 안남
             tf.contrib.keras.backend.clear_session()
-            ### 밑에 주석 참고
+            ## 밑에 주석 참고
             pixmap = QPixmap(dstPath)
             imgLabel.setPixmap(pixmap)
             imgLabel.setGeometry(20, 45, 1050, 636)
@@ -413,8 +438,8 @@ class MainWindow(QDialog):
         로 바꿨음
         '''
 
-        # by 소연 : 인자는 input 경로, output 경로, checkpoint 경로만 받음
-        # 사진 띄우는거는 민기오빠 따라함^^
+        ## by 소연 : 인자는 input 경로, output 경로, checkpoint 경로만 받음
+        ## 사진 띄우는거는 민기오빠 따라함^^
         if imgStyle == "night2day":
             # os.path.join('./dst', 'night2day', os.path.basename(srcPath))  # os.path.join('./dst/night2day/', sp[1])
             dstPath = pix_class.main(input_dir=srcPath, output_dir='dst/night2day', checkpoint='model/night2day_train')
@@ -424,12 +449,13 @@ class MainWindow(QDialog):
                 imgLabel.setPixmap(pixmap)
                 imgLabel.setGeometry(20, 45, 1050, 636)
 
-        if imgStyle == "C":
-            dstPath='./dst/C/img.jpg'
-            img=QPixmap(srcPath)
-            img.save(dstPath)
+        ## 명석오빠 붙이세요~~
+        '''
+        if imgStyle == "neuraldoodle":
+        '''
 
-    ###
+    ####here2 end####
+    #################
 
     def on_save(self):
         global dstPath
@@ -476,7 +502,7 @@ class AboutWindow(QMainWindow):
         self.setGeometry(571, 205, 778, 670)
         self.setWindowFlags(Qt.FramelessWindowHint)
         label = QLabel(self)
-        pixmap = QPixmap("about.jpg") #splash
+        pixmap = QPixmap("about.jpg")#splash
         label.setPixmap(pixmap)
         label.setGeometry(0, 0, 778, 670)
         self.init_window()
@@ -620,7 +646,7 @@ class StartWindow(QMainWindow):
         self.setGeometry(560, 240, 900, 600)
         self.setWindowFlags(Qt.FramelessWindowHint)
         label = QLabel(self)
-        pixmap = QPixmap("start.jpg") #splash
+        pixmap = QPixmap("start.jpg")#splash
         label.setPixmap(pixmap)
         label.setGeometry(0, 0, 900, 600)
         global winLabel
