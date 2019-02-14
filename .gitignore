@@ -16,3 +16,10 @@ __pycache__/
 *.jpg
 *.png
 *.df
+
+# folders
+.idea/
+__pychach__/
+dst/
+src/
+model/
