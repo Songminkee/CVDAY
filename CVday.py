@@ -202,6 +202,7 @@ class MainWindow(QDialog):
         combo2.addItem("vangogh")
         combo2.addItem("ukiyoe")
         combo2.addItem("night2day")
+        combo2.addItem("bw2color")
         combo2.addItem("neuraldoodle")
         combo2.setGeometry(225, 681, 100, 22)
         combo2.activated[str].connect(self.on_format2)
@@ -385,6 +386,8 @@ class MainWindow(QDialog):
             imgStyle = "ukiyoe"
         elif item == "night2day":
             imgStyle = "night2day"
+        elif item == "bw2color":
+            imgStyle = "bw2color"
         elif item == "neuraldoodle":
             imgStyle = "neuraldoodle" # 명석오빠꺼
             message = QMessageBox.question(self, 'Notice', "You must choose a style image.", QMessageBox.Yes | QMessageBox.No,QMessageBox.No)
@@ -451,8 +454,15 @@ class MainWindow(QDialog):
         ## by 소연 : 인자는 input 경로, output 경로, checkpoint 경로만 받음
         ## 사진 띄우는거는 민기오빠 따라함^^
         if imgStyle == "night2day":
-            # os.path.join('./dst', 'night2day', os.path.basename(srcPath))  # os.path.join('./dst/night2day/', sp[1])
             dstPath = pix_class.main(input_dir=srcPath, output_dir='dst/night2day', checkpoint='model/night2day_train')
+
+            if os.path.exists(dstPath):
+                pixmap = QPixmap(dstPath)
+                imgLabel.setPixmap(pixmap)
+                imgLabel.setGeometry(20, 45, 1050, 636)
+
+        if imgStyle == "bw2color":
+            dstPath = pix_class.main(input_dir=srcPath, output_dir='dst/bw2color', checkpoint='model/bw2color_train')
 
             if os.path.exists(dstPath):
                 pixmap = QPixmap(dstPath)
