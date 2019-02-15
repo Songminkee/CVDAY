@@ -4,7 +4,6 @@ from __future__ import print_function
 
 import tensorflow as tf
 import numpy as np
-import argparse
 import os
 import json
 import random
@@ -40,6 +39,7 @@ class pix2pixClass:
         self.gan_weight = 1.0
         self.EPS = 1e-12
         self.CROP_SIZE = 256
+        self.concat_dir = ''
 
         self.Examples = collections.namedtuple("Examples", "paths, inputs, targets, count, steps_per_epoch")
         self.Model = collections.namedtuple("Model", "outputs, predict_real, predict_fake, discrim_loss, "
@@ -99,6 +99,105 @@ class pix2pixClass:
         return tf.layers.batch_normalization(inputs, axis=3, epsilon=1e-5, momentum=0.1, training=True,
                                              gamma_initializer=tf.random_normal_initializer(1.0, 0.02))
 
+    def check_image(self, image):
+        assertion = tf.assert_equal(tf.shape(image)[-1], 3, message="image must have 3 color channels")
+        with tf.control_dependencies([assertion]):
+            image = tf.identity(image)
+
+        if image.get_shape().ndims not in (3, 4):
+            raise ValueError("image must be either 3 or 4 dimensions")
+
+        # make the last dimension 3 so that you can unstack the colors
+        shape = list(image.get_shape())
+        shape[-1] = 3
+        image.set_shape(shape)
+        return image
+
+    def rgb_to_lab(self, srgb):
+        with tf.name_scope("rgb_to_lab"):
+            srgb = self.check_image(srgb)
+            srgb_pixels = tf.reshape(srgb, [-1, 3])
+
+            with tf.name_scope("srgb_to_xyz"):
+                linear_mask = tf.cast(srgb_pixels <= 0.04045, dtype=tf.float32)
+                exponential_mask = tf.cast(srgb_pixels > 0.04045, dtype=tf.float32)
+                rgb_pixels = (srgb_pixels / 12.92 * linear_mask) + (
+                            ((srgb_pixels + 0.055) / 1.055) ** 2.4) * exponential_mask
+                rgb_to_xyz = tf.constant([
+                    #    X        Y          Z
+                    [0.412453, 0.212671, 0.019334],  # R
+                    [0.357580, 0.715160, 0.119193],  # G
+                    [0.180423, 0.072169, 0.950227],  # B
+                ])
+                xyz_pixels = tf.matmul(rgb_pixels, rgb_to_xyz)
+
+            # https://en.wikipedia.org/wiki/Lab_color_space#CIELAB-CIEXYZ_conversions
+            with tf.name_scope("xyz_to_cielab"):
+                # convert to fx = f(X/Xn), fy = f(Y/Yn), fz = f(Z/Zn)
+
+                # normalize for D65 white point
+                xyz_normalized_pixels = tf.multiply(xyz_pixels, [1 / 0.950456, 1.0, 1 / 1.088754])
+
+                epsilon = 6 / 29
+                linear_mask = tf.cast(xyz_normalized_pixels <= (epsilon ** 3), dtype=tf.float32)
+                exponential_mask = tf.cast(xyz_normalized_pixels > (epsilon ** 3), dtype=tf.float32)
+                fxfyfz_pixels = (xyz_normalized_pixels / (3 * epsilon ** 2) + 4 / 29) * linear_mask + (
+                            xyz_normalized_pixels ** (1 / 3)) * exponential_mask
+
+                # convert to lab
+                fxfyfz_to_lab = tf.constant([
+                    #  l       a       b
+                    [0.0, 500.0, 0.0],  # fx
+                    [116.0, -500.0, 200.0],  # fy
+                    [0.0, 0.0, -200.0],  # fz
+                ])
+                lab_pixels = tf.matmul(fxfyfz_pixels, fxfyfz_to_lab) + tf.constant([-16.0, 0.0, 0.0])
+
+            return tf.reshape(lab_pixels, tf.shape(srgb))
+
+    def lab_to_rgb(self, lab):
+        with tf.name_scope("lab_to_rgb"):
+            lab = self.check_image(lab)
+            lab_pixels = tf.reshape(lab, [-1, 3])
+
+            # https://en.wikipedia.org/wiki/Lab_color_space#CIELAB-CIEXYZ_conversions
+            with tf.name_scope("cielab_to_xyz"):
+                # convert to fxfyfz
+                lab_to_fxfyfz = tf.constant([
+                    #   fx      fy        fz
+                    [1 / 116.0, 1 / 116.0, 1 / 116.0],  # l
+                    [1 / 500.0, 0.0, 0.0],  # a
+                    [0.0, 0.0, -1 / 200.0],  # b
+                ])
+                fxfyfz_pixels = tf.matmul(lab_pixels + tf.constant([16.0, 0.0, 0.0]), lab_to_fxfyfz)
+
+                # convert to xyz
+                epsilon = 6 / 29
+                linear_mask = tf.cast(fxfyfz_pixels <= epsilon, dtype=tf.float32)
+                exponential_mask = tf.cast(fxfyfz_pixels > epsilon, dtype=tf.float32)
+                xyz_pixels = (3 * epsilon ** 2 * (fxfyfz_pixels - 4 / 29)) * linear_mask + (
+                            fxfyfz_pixels ** 3) * exponential_mask
+
+                # denormalize for D65 white point
+                xyz_pixels = tf.multiply(xyz_pixels, [0.950456, 1.0, 1.088754])
+
+            with tf.name_scope("xyz_to_srgb"):
+                xyz_to_rgb = tf.constant([
+                    #     r           g          b
+                    [3.2404542, -0.9692660, 0.0556434],  # x
+                    [-1.5371385, 1.8760108, -0.2040259],  # y
+                    [-0.4985314, 0.0415560, 1.0572252],  # z
+                ])
+                rgb_pixels = tf.matmul(xyz_pixels, xyz_to_rgb)
+                # avoid a slightly negative number messing up the conversion
+                rgb_pixels = tf.clip_by_value(rgb_pixels, 0.0, 1.0)
+                linear_mask = tf.cast(rgb_pixels <= 0.0031308, dtype=tf.float32)
+                exponential_mask = tf.cast(rgb_pixels > 0.0031308, dtype=tf.float32)
+                srgb_pixels = (rgb_pixels * 12.92 * linear_mask) + (
+                            (rgb_pixels ** (1 / 2.4) * 1.055) - 0.055) * exponential_mask
+
+            return tf.reshape(srgb_pixels, tf.shape(lab))
+
     def load_examples(self):
         if self.input_dir is None or not os.path.exists(self.input_dir):
             raise Exception("input_dir does not exist")
@@ -108,13 +207,13 @@ class pix2pixClass:
         black_img = np.zeros((256, 256, 3), np.uint8)
 
         concat_img = cv2.hconcat([input_img, black_img])
-        concat_dir = os.path.join(os.path.dirname(self.input_dir), os.path.splitext(os.path.basename(self.input_dir))[0]
+        self.concat_dir = os.path.join(os.path.dirname(self.input_dir), os.path.splitext(os.path.basename(self.input_dir))[0]
                                   + '-concat' + os.path.splitext(os.path.basename(self.input_dir))[1])
 
-        cv2.imwrite(concat_dir, concat_img)  # 옆에 검은색 붙이고 덮어서 저장하기
+        cv2.imwrite(self.concat_dir, concat_img)  # 옆에 검은색 붙이고 덮어서 저장하기
 
         input_paths = list()
-        input_paths.append(concat_dir)  # 추후 파일명 변경
+        input_paths.append(self.concat_dir)  # 추후 파일명 변경
 
         if os.path.splitext(self.input_dir)[1] == ".jpg":
             decode = tf.image.decode_jpeg
@@ -136,6 +235,7 @@ class pix2pixClass:
         else:
             input_paths = sorted(input_paths)
 
+
         with tf.name_scope("load_images"):
             path_queue = tf.train.string_input_producer(input_paths, shuffle=self.mode == "train")
             reader = tf.WholeFileReader()
@@ -149,10 +249,17 @@ class pix2pixClass:
 
             raw_input.set_shape([None, None, 3])
 
-            # break apart image pair and move to range [-1, 1]
-            width = tf.shape(raw_input)[1]  # [height, width, channels]
-            a_images = self.preprocess(raw_input[:, :width // 2, :])
-            b_images = self.preprocess(raw_input[:, width // 2:, :])
+            if self.lab_colorization:
+                # load color and brightness from image, no B image exists here
+                lab = self.rgb_to_lab(raw_input)
+                L_chan, a_chan, b_chan = self.preprocess_lab(lab)
+                a_images = tf.expand_dims(L_chan, axis=2)
+                b_images = tf.stack([a_chan, b_chan], axis=2)
+            else:
+                # break apart image pair and move to range [-1, 1]
+                width = tf.shape(raw_input)[1]  # [height, width, channels]
+                a_images = self.preprocess(raw_input[:, :width // 2, :])
+                b_images = self.preprocess(raw_input[:, width // 2:, :])
 
         if self.which_direction == "AtoB":
             inputs, targets = [a_images, b_images]
@@ -383,7 +490,7 @@ class pix2pixClass:
             #     with open(out_path, "wb") as f:
             #         f.write(contents)
 
-            filename = name.split('-')[0] + "_" + "sem.png"
+            filename = name.split('-')[0] + '.png'
             fileset["outputs"] = filename
             out_path = os.path.join(image_dir, filename)
             contents = fetches["outputs"][i]
@@ -391,7 +498,8 @@ class pix2pixClass:
                 f.write(contents)
 
             filesets.append(fileset)
-        return filesets
+
+        return out_path
 
 
     def main(self, input_dir, output_dir, checkpoint):
@@ -469,30 +577,30 @@ class pix2pixClass:
             }
 
         # summaries
-        with tf.name_scope("inputs_summary"):
-            tf.summary.image("inputs", converted_inputs)
-
-        with tf.name_scope("targets_summary"):
-            tf.summary.image("targets", converted_targets)
-
-        with tf.name_scope("outputs_summary"):
-            tf.summary.image("outputs", converted_outputs)
-
-        with tf.name_scope("predict_real_summary"):
-            tf.summary.image("predict_real", tf.image.convert_image_dtype(model.predict_real, dtype=tf.uint8))
-
-        with tf.name_scope("predict_fake_summary"):
-            tf.summary.image("predict_fake", tf.image.convert_image_dtype(model.predict_fake, dtype=tf.uint8))
-
-        tf.summary.scalar("discriminator_loss", model.discrim_loss)
-        tf.summary.scalar("generator_loss_GAN", model.gen_loss_GAN)
-        tf.summary.scalar("generator_loss_L1", model.gen_loss_L1)
-
-        for var in tf.trainable_variables():
-            tf.summary.histogram(var.op.name + "/values", var)
-
-        for grad, var in model.discrim_grads_and_vars + model.gen_grads_and_vars:
-            tf.summary.histogram(var.op.name + "/gradients", grad)
+        # with tf.name_scope("inputs_summary"):
+        #     tf.summary.image("inputs", converted_inputs)
+        #
+        # with tf.name_scope("targets_summary"):
+        #     tf.summary.image("targets", converted_targets)
+        #
+        # with tf.name_scope("outputs_summary"):
+        #     tf.summary.image("outputs", converted_outputs)
+        #
+        # with tf.name_scope("predict_real_summary"):
+        #     tf.summary.image("predict_real", tf.image.convert_image_dtype(model.predict_real, dtype=tf.uint8))
+        #
+        # with tf.name_scope("predict_fake_summary"):
+        #     tf.summary.image("predict_fake", tf.image.convert_image_dtype(model.predict_fake, dtype=tf.uint8))
+        #
+        # tf.summary.scalar("discriminator_loss", model.discrim_loss)
+        # tf.summary.scalar("generator_loss_GAN", model.gen_loss_GAN)
+        # tf.summary.scalar("generator_loss_L1", model.gen_loss_L1)
+        #
+        # for var in tf.trainable_variables():
+        #     tf.summary.histogram(var.op.name + "/values", var)
+        #
+        # for grad, var in model.discrim_grads_and_vars + model.gen_grads_and_vars:
+        #     tf.summary.histogram(var.op.name + "/gradients", grad)
 
         with tf.name_scope("parameter_count"):
             parameter_count = tf.reduce_sum([tf.reduce_prod(tf.shape(v)) for v in tf.trainable_variables()])
@@ -500,9 +608,9 @@ class pix2pixClass:
         saver = tf.train.Saver(max_to_keep=1)
 
         logdir = self.output_dir if (self.trace_freq > 0 or self.summary_freq > 0) else None
-        sv = tf.train.Supervisor(logdir=logdir, save_summaries_secs=0, saver=None)
+        sv = tf.train.Supervisor(logdir=None, save_summaries_secs=0, saver=None)
 
-        with sv.managed_session() as sess:
+        with sv.managed_session() as sess:  #  여기서 이상한것들 저장됨
             print("parameter_count =", sess.run(parameter_count))
 
             if self.checkpoint is not None:
@@ -519,16 +627,19 @@ class pix2pixClass:
             if self.mode == "test":
                 # testing
                 # at most, process the test data once
-                start = time.time()
+                # start = time.time()
                 max_steps = min(examples.steps_per_epoch, max_steps)
                 for step in range(max_steps):
                     results = sess.run(display_fetches)
-                    filesets = self.save_images(results)
-                    for i, f in enumerate(filesets):
-                        print("evaluated image", f["name"])
-            tf.contrib.keras.backend.clear_session()
-                #     index_path = append_index(filesets)
-                # print("wrote index at", index_path)
-                # print("rate", (time.time() - start) / max_steps)
+                    out_path = self.save_images(results)
+                    # for i, f in enumerate(filesets):
+                    #    print("evaluated image", f["name"])
 
-pix_class = pix2pixClass()
+                os.remove(self.concat_dir)
+
+        tf.contrib.keras.backend.clear_session()
+
+        return out_path
+
+# pix_class = pix2pixClass()
+# pix_class.main(input_dir='src/joonggi.jpg', output_dir='dst', checkpoint='facial_train')

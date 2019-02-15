@@ -16,52 +16,40 @@ import time
 import pickle
 import argparse
 import itertools
-import cv2
-import face_labeling
-
-
 import collections
-
+import cv2
 
 # Configure all options first so we can custom load other libraries (Theano) based on device specified by user.
 parser = argparse.ArgumentParser(description='Generate a new image by applying style onto a content image.',
-                                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+                                             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 add_arg = parser.add_argument
-face_labeling.pix_class.main(input_dir='src/sample.jpg', output_dir='src', checkpoint='facial_train')
-face_labeling.pix_class.main(input_dir='src/style.jpg', output_dir='src', checkpoint='facial_train')
-input_img = cv2.imread("src/sample.jpg")
-input_img=cv2.resize(input_img, dsize=(256, 256))
-cv2.imwrite('src/sample.jpg',input_img)
-style_img = cv2.imread("src/style.jpg")
-style_img=cv2.resize(style_img, dsize=(256, 256))
-cv2.imwrite('src/style.jpg',style_img)
-add_arg('--content',        default='src/sample.jpg', type=str,        help='Content image path as optimization target.')
-add_arg('--content-weight', default=10.0, type=float,       help='Weight of content relative to style.')
-add_arg('--content-layers', default='4_2', type=str,        help='The layer with which to match content.')
-add_arg('--style',          default='src/style.jpg', type=str,         help='Style image path to extract patches.')
-add_arg('--style-weight',   default=10.0, type=float,       help='Weight of style relative to content.')
-add_arg('--style-layers',   default='3_1,4_1', type=str,    help='The layers to match style patches.')
-add_arg('--semantic-ext',   default='_sem.png', type=str,   help='File extension for the semantic maps.')
-add_arg('--semantic-weight', default=10.0, type=float,      help='Global weight of semantics vs. features.')
-add_arg('--output',         default='dst/result.png', type=str, help='Output image path to save once done.')
-add_arg('--output-size',    default=None, type=str,         help='Size of the output image, e.g. 512x512.')
-add_arg('--phases',         default=4, type=int,            help='Number of image scales to process in phases.')
-add_arg('--slices',         default=2, type=int,            help='Split patches up into this number of batches.')
-add_arg('--cache',          default=0, type=int,            help='Whether to compute matches only once.')
-add_arg('--smoothness',     default=1E+0, type=float,       help='Weight of image smoothing scheme.')
-add_arg('--variety',        default=0.0, type=float,        help='Bias toward selecting diverse patches, e.g. 0.5.')
-add_arg('--seed',           default='noise', type=str,      help='Seed image path, "noise" or "content".')
-add_arg('--seed-range',     default='16:240', type=str,     help='Random colors chosen in range, e.g. 0:255.')
-add_arg('--iterations',     default=1000, type=int,          help='Number of iterations to run each resolution.')
-add_arg('--device',         default='cuda', type=str,        help='Index of the GPU number to use, for theano.')
-add_arg('--print-every',    default=10, type=int,           help='How often to log statistics to stdout.')
-add_arg('--save-every',     default=10, type=int,           help='How frequently to save PNG into `frames`.')
+add_arg('--content', default='', type=str, help='Content image path as optimization target.')
+add_arg('--content-weight', default=10.0, type=float, help='Weight of content relative to style.')
+add_arg('--content-layers', default='4_2', type=str, help='The layer with which to match content.')
+add_arg('--style', default='', type=str, help='Style image path to extract patches.')
+add_arg('--style-weight', default=10.0, type=float, help='Weight of style relative to content.')
+add_arg('--style-layers', default='3_1,4_1', type=str, help='The layers to match style patches.')
+add_arg('--semantic-ext', default='_sem.png', type=str, help='File extension for the semantic maps.')
+add_arg('--semantic-weight', default=10.0, type=float, help='Global weight of semantics vs. features.')
+add_arg('--output', default='', type=str, help='Output image path to save once done.')
+add_arg('--output-size', default=None, type=str, help='Size of the output image, e.g. 512x512.')
+add_arg('--phases', default=4, type=int, help='Number of image scales to process in phases.')
+add_arg('--slices', default=2, type=int, help='Split patches up into this number of batches.')
+add_arg('--cache', default=0, type=int, help='Whether to compute matches only once.')
+add_arg('--smoothness', default=1E+0, type=float, help='Weight of image smoothing scheme.')
+add_arg('--variety', default=0.0, type=float, help='Bias toward selecting diverse patches, e.g. 0.5.')
+add_arg('--seed', default='noise', type=str, help='Seed image path, "noise" or "content".')
+add_arg('--seed-range', default='16:240', type=str, help='Random colors chosen in range, e.g. 0:255.')
+add_arg('--iterations', default=40, type=int, help='Number of iterations to run each resolution.')
+add_arg('--device', default='cuda', type=str, help='Index of the GPU number to use, for theano.')
+add_arg('--print-every', default=10, type=int, help='How often to log statistics to stdout.')
+add_arg('--save-every', default=10, type=int, help='How frequently to save PNG into `frames`.')
 args = parser.parse_args()
-
 
 #----------------------------------------------------------------------------------------------------------------------
 
 # Color coded output helps visualize the information a little better, plus looks cool!
+
 class ansi:
     BOLD = '\033[1;97m'
     WHITE = '\033[0;97m'
@@ -74,7 +62,7 @@ class ansi:
     CYAN = '\033[0;36m'
     CYAN_B = '\033[1;36m'
     ENDC = '\033[0m'
-    
+
 def error(message, *lines):
     string = "\n{}ERROR: " + message + "{}\n" + "\n".join(lines) + "{}\n"
     print(string.format(ansi.RED_B, ansi.RED, ansi.ENDC))
@@ -161,7 +149,7 @@ class Model(object):
             if i == 0:
                 net['map%i'%(j+1)] = PoolLayer(net['map'], 2**j, mode='average_exc_pad')
             self.channels[suffix] = net['conv'+suffix].num_filters
-            
+
             if args.semantic_weight > 0.0:
                 net['sem'+suffix] = ConcatLayer([net['conv'+suffix], net['map%i'%(j+1)]])
             else:
@@ -364,7 +352,7 @@ class NeuralGenerator(object):
         extractor = self.compile([self.model.tensor_img, self.model.tensor_map], self.do_extract_patches(layer_outputs))
         result = extractor(self.style_img, self.style_map)
 
-        # Store all the style patches layer by layer, resized to match slice size and cast to 16-bit for size. 
+        # Store all the style patches layer by layer, resized to match slice size and cast to 16-bit for size.
         self.style_data = {}
         for layer, *data in zip(self.style_layers, result[0::3], result[1::3], result[2::3]):
             patches = data[0]
@@ -379,14 +367,14 @@ class NeuralGenerator(object):
         Here we compile a function to run on the GPU that returns all components separately.
         """
 
-        # Feed-forward calculation only, returns the result of the convolution post-activation 
+        # Feed-forward calculation only, returns the result of the convolution post-activation
         self.compute_features = self.compile([self.model.tensor_img, self.model.tensor_map],
                                              self.model.get_outputs('sem', self.style_layers))
 
         # Patch matching calculation that uses only pre-calculated features and a slice of the patches.
-        
+
         self.matcher_tensors = {l: lasagne.utils.shared_empty(dim=4) for l in self.style_layers}
-        self.matcher_history = {l: T.vector() for l in self.style_layers} 
+        self.matcher_history = {l: T.vector() for l in self.style_layers}
         self.matcher_inputs = {self.model.network['dup'+l]: self.matcher_tensors[l] for l in self.style_layers}
         nn_layers = [self.model.network['nn'+l] for l in self.style_layers]
         self.matcher_outputs = dict(zip(self.style_layers, lasagne.layers.get_output(nn_layers, self.matcher_inputs)))
@@ -496,7 +484,7 @@ class NeuralGenerator(object):
 
     def iterate_batches(self, *arrays, batch_size):
         """Break down the data in arrays batch by batch and return them as a generator.
-        """ 
+        """
         total_size = arrays[0].shape[0]
         indices = np.arange(total_size)
         for index in range(0, total_size, batch_size):
@@ -666,6 +654,10 @@ class NeuralGenerator(object):
               .format(ansi.CYAN, status, time.time() - self.start_time, self.error, ansi.ENDC))
 
 
+
 if __name__ == "__main__":
     generator = NeuralGenerator()
     generator.run()
+
+
+

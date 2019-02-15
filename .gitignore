@@ -1,15 +1,20 @@
+
 # folders
-docs/
-docker/
-samples/
 .idea/
 frames/
-pyvenv/
-venv/
 src/
 dst/
-facial_train/
 __pycache__/
+tools/neuraldoodle/src/
+tools/neuraldoodle/sample/
+tools/neuraldoodle/pyvenv/
+tools/neuraldoodle/frames/
+tools/neuraldoodle/facial_train/
+tools/neuraldoodle/dst/
+tools/neuraldoodle/docs/
+tools/neuraldoodle/docker/
+tools/neuraldoodle/__pycache__/
+tools/neuraldoodle/.idea/
 
 # format
 *.bz2
@@ -23,3 +28,43 @@ __pychach__/
 dst/
 src/
 model/
+
+
+*.pyc
+tags
+test
+models
+.idea
+
+# datasets
+facades/
+facades_test/
+facades_train/
+night2day/
+night2day_train/
+facial_test/
+facial_train/
+night2day_train/
+ukiyoe2photo_256/
+vangogh2photo_256/
+
+# other folders
+server/
+docs/
+docker/
+
+# other format
+*.zip
+*.jpg
+*.png
+*.tar
+*.tar.gz
+*.tar.xz
+*.egg
+*.log
+
+# folders
+.idea/
+__pycache__/
+
+
