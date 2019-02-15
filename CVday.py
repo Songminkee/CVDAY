@@ -476,6 +476,8 @@ class MainWindow(QDialog):
             cv2.imwrite('src/stlimg.jpg', style_img)
             doodle.args.content='src/img.jpg'
             doodle.args.style='src/stlimg.jpg'
+            if not os.path.exists('dst/neuraldoodle'):
+                os.makedirs('dst/neuraldoodle')
             doodle.args.output='dst/neuraldoodle/output.png'
             generator = doodle.NeuralGenerator()
             generator.run()
