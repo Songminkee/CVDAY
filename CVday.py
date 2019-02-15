@@ -21,6 +21,9 @@ import tensorflow as tf
 tf.set_random_seed(19)
 from tools.cyclegan.model import cyclegan
 from tools.pix2pix import pix2pix as ptp
+from tools.neuraldoodle import face_labeling
+from tools.neuraldoodle import doodle
+import argparse
 
 srcPath='./src/img.jpg'
 stlPath='./src/stlimg.jpg'
@@ -430,6 +433,7 @@ class MainWindow(QDialog):
             modelname='ukiyoe2photo'
             tfconfig=tf.ConfigProto(allow_soft_placement=True)
             tfconfig.gpu_options.allow_growth=True
+            tfconfig.gpu_options.per_process_gpu_memory_fraction=0.6
             with tf.Session(config=tfconfig) as sess:
                 model=cyclegan(sess,modelname,srcPath)
                 dstPath=model.test()
@@ -470,9 +474,28 @@ class MainWindow(QDialog):
                 imgLabel.setGeometry(20, 45, 1050, 636)
 
         ## 명석오빠 붙이세요~~
-        '''
+
         if imgStyle == "neuraldoodle":
-        '''
+            face_labeling.pix_class.main(input_dir='src/img.jpg', output_dir='src', checkpoint='model/facial_train')
+            face_labeling.pix_class.main(input_dir='src/stlimg.jpg', output_dir='src', checkpoint='model/facial_train')
+            input_img = cv2.imread('src/img.jpg')
+            input_img = cv2.resize(input_img, dsize=(256, 256))
+            cv2.imwrite('src/img.jpg', input_img)
+            style_img = cv2.imread("src/stlimg.jpg")
+            style_img = cv2.resize(style_img, dsize=(256, 256))
+            cv2.imwrite('src/stlimg.jpg', style_img)
+            doodle.args.content='src/img.jpg'
+            doodle.args.style='src/stlimg.jpg'
+            if not os.path.exists('dst/neuraldoodle'):
+                os.makedirs('dst/neuraldoodle')
+            doodle.args.output='dst/neuraldoodle/output.png'
+            generator = doodle.NeuralGenerator()
+            generator.run()
+
+            pixmap = QPixmap('dst/neuraldoodle/output.png')
+            imgLabel.setPixmap(pixmap)
+            imgLabel.setGeometry(20, 45, 1050, 636)
+
 
     ####here2 end####
     #################
