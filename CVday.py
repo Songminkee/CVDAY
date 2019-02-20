@@ -194,10 +194,10 @@ class MainWindow(QDialog):
         list.setViewMode(QtWidgets.QListView.IconMode)
         list.setIconSize(QtCore.QSize(220, 170))
         for image, text in [("widget.png", "Vangogh"),
-                            ("widget (2).png", "Ukiyoe"),
-                            ("widget (3).png", "Night To Day"),
-                            ("widget (4).png", "Black-White To Color"),
-                            ("widget (5).png", "Neural Doodle")]:
+                            ("widget2.png", "Ukiyoe"),
+                            ("widget3.png", "Night To Day"),
+                            ("widget4.png", "Black-White To Color"),
+                            ("widget5.png", "Neural Doodle")]:
             item = QtWidgets.QListWidgetItem(text, list)
             icon = QtGui.QIcon()
             icon.addPixmap(QtGui.QPixmap(image), QtGui.QIcon.Normal, QtGui.QIcon.Off)
@@ -373,7 +373,7 @@ class MainWindow(QDialog):
             img.save(srcPath)
             smaller_pixmap = pixmap.scaled(1050, 636, Qt.KeepAspectRatio, Qt.FastTransformation)
             global imgLabelBack
-            pixmap2 = QPixmap("main (2).png")  # interface
+            pixmap2 = QPixmap("main2.png")  # interface
             imgLabelBack.setPixmap(pixmap2)
             imgLabelBack.setGeometry(19, 44, 1063, 656)
             imgLabelBack.show()
