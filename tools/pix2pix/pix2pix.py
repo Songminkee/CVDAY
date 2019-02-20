@@ -532,13 +532,6 @@ class pix2pixClass:
             self.scale_size = self.CROP_SIZE
             self.flip = False
 
-        # args 프린트 해주는 부분
-        # for k, v in a._get_kwargs():
-        #    print(k, "=", v)
-
-        # with open(os.path.join(a.output_dir, "options.json"), "w") as f:
-        #     f.write(json.dumps(vars(a), sort_keys=True, indent=4))
-
         examples = self.load_examples()
         print("examples count = %d" % examples.count)
 
@@ -575,32 +568,6 @@ class pix2pixClass:
                 "targets": tf.map_fn(tf.image.encode_png, converted_targets, dtype=tf.string, name="target_pngs"),
                 "outputs": tf.map_fn(tf.image.encode_png, converted_outputs, dtype=tf.string, name="output_pngs"),
             }
-
-        # summaries
-        # with tf.name_scope("inputs_summary"):
-        #     tf.summary.image("inputs", converted_inputs)
-        #
-        # with tf.name_scope("targets_summary"):
-        #     tf.summary.image("targets", converted_targets)
-        #
-        # with tf.name_scope("outputs_summary"):
-        #     tf.summary.image("outputs", converted_outputs)
-        #
-        # with tf.name_scope("predict_real_summary"):
-        #     tf.summary.image("predict_real", tf.image.convert_image_dtype(model.predict_real, dtype=tf.uint8))
-        #
-        # with tf.name_scope("predict_fake_summary"):
-        #     tf.summary.image("predict_fake", tf.image.convert_image_dtype(model.predict_fake, dtype=tf.uint8))
-        #
-        # tf.summary.scalar("discriminator_loss", model.discrim_loss)
-        # tf.summary.scalar("generator_loss_GAN", model.gen_loss_GAN)
-        # tf.summary.scalar("generator_loss_L1", model.gen_loss_L1)
-        #
-        # for var in tf.trainable_variables():
-        #     tf.summary.histogram(var.op.name + "/values", var)
-        #
-        # for grad, var in model.discrim_grads_and_vars + model.gen_grads_and_vars:
-        #     tf.summary.histogram(var.op.name + "/gradients", grad)
 
         with tf.name_scope("parameter_count"):
             parameter_count = tf.reduce_sum([tf.reduce_prod(tf.shape(v)) for v in tf.trainable_variables()])

@@ -1,4 +1,23 @@
 
+# folders
+frames/
+tools/neuraldoodle/sample/
+tools/neuraldoodle/pyvenv/
+
+# format
+*.bz2
+*.jpg
+*.png
+*.df
+
+# folders
+.idea/
+__pychach__/
+dst/
+src/
+model/
+
+
 *.pyc
 tags
 test
@@ -14,6 +33,7 @@ night2day_train/
 facial_test/
 facial_train/
 night2day_train/
+bw2color_train/
 ukiyoe2photo_256/
 vangogh2photo_256/
 
@@ -32,7 +52,4 @@ docker/
 *.egg
 *.log
 
-# folders
-.idea/
-__pycache__/
 
