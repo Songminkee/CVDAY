@@ -10,7 +10,7 @@ Theano
 pyqt5==5.11.3
 opencv-python==3.4.4.19
 numpy>=1.16
-tensorflow-gpu==1.12
+tensorflow-gpu>=1.15.2
 scipy>=1.2
 pillow>=5.4.1
 imageio>=2.4.1
