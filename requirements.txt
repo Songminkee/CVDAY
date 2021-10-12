@@ -8,7 +8,7 @@ mkl-service
 Theano
 
 pyqt5==5.11.3
-opencv-python==3.4.4.19
+opencv-python==3.4.7.28
 numpy>=1.16
 tensorflow-gpu>=1.15.2
 scipy>=1.2
